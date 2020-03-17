@@ -2,6 +2,7 @@ source(here::here("R/packages.R"))
 
 source(here::here("R/f_general.R"))
 source(here::here("R/f_data_gathering.R"))
+source(here::here("R/f_plotting.R"))
 
 source(here::here("R/plan.R"))
 
