@@ -54,3 +54,22 @@ boxplot_AUC <- function(CV_tbl, hyperparam) {
         )
 }
 
+scatterplot_AUC <- function(CV_tbl, hyperparam) {
+    hyperparam <- enquo(hyperparam)
+    CV_tbl %>% 
+        unnest(all_auc) %>% 
+        ggplot(aes(x = !!hyperparam, y = all_auc)) +
+        geom_point(alpha = 0.5) +
+        geom_point(aes(y = mean_auc), 
+                   CV_tbl %>% 
+                       unnest(all_auc) %>% 
+                       group_by(!!hyperparam) %>% 
+                       summarise(mean_auc = mean(all_auc)), 
+                   colour = "red") + 
+        theme_light() +
+        labs(
+            y = "AUC", 
+            title = paste("AUC scores for hyperparameter:", 
+                          rlang::as_label(hyperparam))
+        )
+}
