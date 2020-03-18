@@ -14,5 +14,5 @@ source(here::here("R/plan.R"))
 
 make(
     g_plan, 
-    verbose = 2
+    verbose = 1
 )
