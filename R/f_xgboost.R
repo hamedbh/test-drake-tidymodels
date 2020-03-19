@@ -1,18 +1,18 @@
-xgb_alpha <- new_quant_param(
-    type = "double", 
-    range = c(0, 20), 
-    inclusive = c(TRUE, TRUE), 
-    default = unknown(), 
-    label = c("xgb_alpha" = "alpha")
-)
-
-xgb_lambda <- new_quant_param(
-    type = "double", 
-    range = c(0, 20), 
-    inclusive = c(TRUE, TRUE), 
-    default = unknown(), 
-    label = c("xgb_lambda" = "lambda")
-)
+# alpha <- new_quant_param(
+#     type = "double", 
+#     range = c(0, 20), 
+#     inclusive = c(TRUE, TRUE), 
+#     default = unknown(), 
+#     label = c("alpha" = "alpha")
+# )
+# 
+# lambda <- new_quant_param(
+#     type = "double", 
+#     range = c(0, 20), 
+#     inclusive = c(TRUE, TRUE), 
+#     default = unknown(), 
+#     label = c("lambda" = "lambda")
+# )
 
 define_xgb <- function(trees, learn_rate) {
     ntree <- enquo(trees)
@@ -26,7 +26,8 @@ define_xgb <- function(trees, learn_rate) {
         learn_rate = !!eta, 
         loss_reduction = varying(), 
         sample_size = varying()
-    )
+    ) %>% 
+        set_engine("xgboost")
 }
 
 create_xgb_grid <- function(dtrain,
@@ -40,9 +41,7 @@ create_xgb_grid <- function(dtrain,
             min_n(), 
             tree_depth(range = c(1L, 15L)), 
             loss_reduction(), 
-            sample_size(range = c(0.5, 1)), 
-            xgb_alpha, 
-            xgb_lambda
+            sample_size(range = c(0.5, 1))
         )
     ) %>%
         finalize(g_preds) %>% 
@@ -57,9 +56,7 @@ run_xgb_CV <- function(spec, grid, folds) {
                      min_n, 
                      tree_depth, 
                      loss_reduction, 
-                     sample_size, 
-                     xgb_alpha, 
-                     xgb_lambda) {
+                     sample_size) {
                 folds %>% 
                     mutate(main = map(splits, analysis), 
                            validate = map(splits, assessment)) %>% 
@@ -71,10 +68,7 @@ run_xgb_CV <- function(spec, grid, folds) {
                                              tree_depth = tree_depth,
                                              loss_reduction = loss_reduction,
                                              sample_size = sample_size
-                                         ) %>%
-                                         set_engine("xgboost", 
-                                                    alpha = xgb_alpha, 
-                                                    lambda = xgb_lambda) %>% 
+                                         ) %>% 
                                          fit(outcome ~ ., data = .x))) %>%
                     mutate(preds = map2(fit,
                                         validate,
