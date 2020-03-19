@@ -25,18 +25,19 @@ create_g_recipe <- function(splits) {
                    -all_outcomes(), 
                    one_hot = TRUE) %>% 
         step_normalize(all_numeric()) %>% 
-        step_downsample(outcome, under_ratio = 1.2) %>% 
-        prep()
+        step_downsample(outcome, under_ratio = 1.2)
     
 }
 
 create_training <- function(rec) { 
     rec %>% 
+        prep() %>% 
         juice()
 }
 
 create_testing <- function(rec, splits) {
     rec %>% 
+        prep() %>% 
         bake(new_data = splits %>% 
                  testing())
 }
