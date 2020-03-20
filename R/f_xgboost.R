@@ -19,13 +19,13 @@ define_xgb <- function(trees, learn_rate) {
     eta <- enquo(learn_rate)
     boost_tree(
         mode = "classification", 
-        mtry = varying(),
+        mtry = tune(),
         trees = !!ntree, 
-        min_n = varying(), 
-        tree_depth = varying(), 
+        min_n = tune(), 
+        tree_depth = tune(), 
         learn_rate = !!eta, 
-        loss_reduction = varying(), 
-        sample_size = varying()
+        loss_reduction = tune(), 
+        sample_size = tune()
     ) %>% 
         set_engine("xgboost")
 }
@@ -34,7 +34,6 @@ create_xgb_grid <- function(dtrain,
                             size,
                             RNG_seed) {
     set.seed(RNG_seed)
-    g_preds <- dtrain %>% select(-outcome)
     parameters(
         list(
             mtry(),
@@ -44,8 +43,8 @@ create_xgb_grid <- function(dtrain,
             sample_size(range = c(0.5, 1))
         )
     ) %>%
-        finalize(g_preds) %>% 
-        grid_latin_hypercube(size = size)
+        finalize(dtrain) %>% 
+        grid_max_entropy(size = size)
 }
 
 run_xgb_CV <- function(spec, grid, folds) {
