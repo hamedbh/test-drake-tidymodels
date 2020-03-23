@@ -1,24 +1,7 @@
-# alpha <- new_quant_param(
-#     type = "double", 
-#     range = c(0, 20), 
-#     inclusive = c(TRUE, TRUE), 
-#     default = unknown(), 
-#     label = c("alpha" = "alpha")
-# )
-# 
-# lambda <- new_quant_param(
-#     type = "double", 
-#     range = c(0, 20), 
-#     inclusive = c(TRUE, TRUE), 
-#     default = unknown(), 
-#     label = c("lambda" = "lambda")
-# )
-
 define_xgb <- function(trees, learn_rate) {
     ntree <- enquo(trees)
     eta <- enquo(learn_rate)
     boost_tree(
-        mode = "classification", 
         mtry = tune(),
         trees = !!ntree, 
         min_n = tune(), 
@@ -27,80 +10,66 @@ define_xgb <- function(trees, learn_rate) {
         loss_reduction = tune(), 
         sample_size = tune()
     ) %>% 
+        set_mode("classification") %>% 
         set_engine("xgboost")
 }
 
-create_xgb_grid <- function(dtrain,
-                            size,
-                            RNG_seed) {
-    set.seed(RNG_seed)
-    parameters(
-        list(
-            mtry(),
-            min_n(), 
-            tree_depth(range = c(1L, 15L)), 
-            loss_reduction(), 
-            sample_size(range = c(0.5, 1))
-        )
-    ) %>%
-        finalize(dtrain) %>% 
-        grid_max_entropy(size = size)
-}
-
-run_xgb_CV <- function(spec, grid, folds) {
-    grid %>% 
-        mutate(CV_results = pmap(
-            ., 
-            function(mtry, 
-                     min_n, 
-                     tree_depth, 
-                     loss_reduction, 
-                     sample_size) {
-                folds %>% 
-                    mutate(main = map(splits, analysis), 
-                           validate = map(splits, assessment)) %>% 
-                    mutate(fit = map(main,
-                                     ~ spec %>%
-                                         set_args(
-                                             mtry = mtry,
-                                             min_n = min_n,
-                                             tree_depth = tree_depth,
-                                             loss_reduction = loss_reduction,
-                                             sample_size = sample_size
-                                         ) %>% 
-                                         fit(outcome ~ ., data = .x))) %>%
-                    mutate(preds = map2(fit,
-                                        validate,
-                                        ~ predict(.x,
-                                                  new_data = .y,
-                                                  type = "prob"))) %>%
-                    mutate(truth_tbl = map2(
-                        preds,
-                        validate,
-                        ~ .x %>%
-                            select(.pred_bad) %>%
-                            bind_cols(.y %>%
-                                          select(outcome)))) %>%
-                    mutate(auc = map_dbl(
-                        truth_tbl,
-                        ~ .x %>%
-                            roc_auc(truth = outcome,
-                                    .pred_bad) %>%
-                            pull(.estimate))) %>%
-                    mutate(full_roc = map(
-                        truth_tbl,
-                        ~ .x %>%
-                            roc_curve(truth = outcome,
-                                      .pred_bad)
-                    )) %>%
-                    select(starts_with("id"),
-                           truth_tbl,
-                           auc,
-                           full_roc)
-            }
-        )) %>% 
-        unnest(CV_results) %>%
-        add_column(model_name = "xgboost",
-                   .before = 1L)
-    
-}
+# create_xgb_wflow <- function(pre_proc, model_spec) {
+#     workflow() %>% 
+#         add_model(spec = model_spec) %>% 
+#         add_recipe(recipe = pre_proc)
+# }
+# 
+# create_xgb_params <- function(wflow, 
+#                               dtrain) {
+#     wflow %>% 
+#         parameters() %>% 
+#         finalize(dtrain)
+# }
+# 
+# create_xgb_grid <- function(params, 
+#                             size, 
+#                             RNG_seed) {
+#     set.seed(RNG_seed)
+#     params %>% 
+#         grid_latin_hypercube(size = size)
+# }
+# 
+# tune_xgb_grid <- function(wflow, 
+#                           resamples, 
+#                           params, 
+#                           grid) {
+#     tune_grid(
+#         wflow, 
+#         resamples = resamples, 
+#         param_info = params, 
+#         grid = grid, 
+#         metrics = metric_set(roc_auc), 
+#         control = control_grid(
+#             verbose = TRUE, 
+#             allow_par = TRUE, 
+#             save_pred = TRUE
+#         )
+#     )
+# }
+# 
+# tune_xgb_bayes <- function(wflow, 
+#                            resamples, 
+#                            params, 
+#                            grid_results, 
+#                            iter, 
+#                            RNG_seed) {
+#     tune_bayes(
+#         wflow, 
+#         resamples = resamples, 
+#         iter = iter, 
+#         param_info = params, 
+#         metrics = metric_set(roc_auc), 
+#         initial = grid_results, 
+#         control = control_bayes(
+#             verbose = TRUE, 
+#             seed = RNG_seed, 
+#             save_pred = TRUE
+#         )
+#     )
+# }
