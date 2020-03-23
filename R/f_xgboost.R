@@ -14,12 +14,12 @@ define_xgb <- function(trees, learn_rate) {
         set_engine("xgboost")
 }
 
-# create_xgb_wflow <- function(pre_proc, model_spec) {
-#     workflow() %>% 
-#         add_model(spec = model_spec) %>% 
-#         add_recipe(recipe = pre_proc)
-# }
-# 
+create_xgb_wflow <- function(pre_proc, model_spec) {
+    workflow() %>%
+        add_model(spec = model_spec) %>%
+        add_recipe(recipe = pre_proc)
+}
+
 # create_xgb_params <- function(wflow, 
 #                               dtrain) {
 #     wflow %>% 

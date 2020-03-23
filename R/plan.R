@@ -18,7 +18,7 @@ g_plan <- drake_plan(
     # ranger_CV = run_ranger_CV(ranger_spec, ranger_grid, cv_folds),
     # ranger_CV_metrics = get_CV_metrics(ranger_CV), 
     xgb_mod = define_xgb(10, 0.3),
-    # xgb_wflow = create_xgb_wflow(g_recipe, xgb_mod), 
+    xgb_wflow = create_xgb_wflow(g_recipe, xgb_mod),
     # xgb_params = create_xgb_params(xgb_wflow,
     #                                training(training_split)),
     # xgb_grid = create_xgb_grid(params = xgb_params,
