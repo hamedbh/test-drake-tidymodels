@@ -20,13 +20,16 @@ create_xgb_wflow <- function(pre_proc, model_spec) {
         add_recipe(recipe = pre_proc)
 }
 
-# create_xgb_params <- function(wflow, 
-#                               dtrain) {
-#     wflow %>% 
-#         parameters() %>% 
-#         finalize(dtrain)
-# }
-# 
+create_xgb_params <- function(wflow,
+                              pre_proc) {
+    wflow %>%
+        parameters() %>%
+        finalize(pre_proc %>% 
+                     prep() %>% 
+                     juice() %>% 
+                     select(-outcome))
+}
+
 # create_xgb_grid <- function(params, 
 #                             size, 
 #                             RNG_seed) {
