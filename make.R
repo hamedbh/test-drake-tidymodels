@@ -5,8 +5,6 @@ list.files(here::here("R"),
            full.names = TRUE) %>% 
     walk(source)
 
-source(here::here("R/f_evaluate_models.R"))
-
 source(here::here("R/plan.R"))
 
 make(
