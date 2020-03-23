@@ -146,7 +146,7 @@ partition_data <- function(d, p, RNG_seed) {
 create_cv_folds <- function(dtrain, RNG_seed) {
     set.seed(RNG_seed)
     vfold_cv(dtrain,
-             v = 3,
+             v = 5,
              repeats = 1,
              strata = outcome)
 }
