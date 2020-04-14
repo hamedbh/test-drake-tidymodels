@@ -1,9 +1,10 @@
+options(tidymodels.dark = TRUE)
 source(here::here("R/packages.R"))
 
-list.files(here::here("R"), 
-           pattern = "^f", 
-           full.names = TRUE) %>% 
-    walk(source)
+source(here::here("R/f_general.R"))
+source(here::here("R/f_data_prep.R"))
+source(here::here("R/f_plotting.R"))
+source(here::here("R/f_xgboost.R"))
 
 source(here::here("R/plan.R"))
 
