@@ -48,6 +48,7 @@ tune_ranger_bayes <- function(wflow,
                               params,
                               grid_results, 
                               RNG_seed) {
+    no_improve <- iter
     set.seed(RNG_seed)
     tune_bayes(
         wflow,
@@ -58,7 +59,8 @@ tune_ranger_bayes <- function(wflow,
         initial = grid_results,
         control = control_bayes(
             verbose = TRUE,
-            save_pred = TRUE
+            save_pred = TRUE, 
+            no_improve = no_improve
         )
     )
 }
