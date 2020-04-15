@@ -81,4 +81,20 @@ g_plan <- drake_plan(
         params = svmrbf_params,
         grid_results = svmrbf_grid_tune,
         RNG_seed = 1155),
+    
+    # Elastic net, regularised logistic regression
+    elnet_rec = create_elnet_pre_proc(g_train), 
+    elnet_mod = define_elnet(), 
+    elnet_wfl = workflows::workflow() %>% 
+        add_model(elnet_mod) %>% 
+        add_recipe(elnet_rec), 
+    elnet_params = parameters(elnet_wfl) %>% 
+        update(mixture = mixture(range = c(0, 1))), 
+    elnet_grid = grid_regular(elnet_params, 
+                              levels = 21), 
+    elnet_grid_tune = tune_ranger_grid(
+        wflow = elnet_wfl,
+        resamples = g_folds,
+        grid = elnet_grid,
+        params = elnet_params)
 )
