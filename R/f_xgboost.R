@@ -1,3 +1,13 @@
+create_xgb_pre_proc <- function(train) {
+    set.seed(1616)
+    recipe(outcome ~ .,
+           data = train) %>%
+        step_normalize(all_numeric()) %>% 
+        step_dummy(all_nominal(),
+                   -all_outcomes(),
+                   one_hot = TRUE)
+}
+
 define_xgb <- function(trees, learn_rate) {
     ntree <- enquo(trees)
     eta <- enquo(learn_rate)
