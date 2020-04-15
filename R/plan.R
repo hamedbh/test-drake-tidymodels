@@ -12,10 +12,10 @@ g_plan <- drake_plan(
     g_folds = create_cv_folds(g_train, 1738), 
     
     # Plot objects
-    barplot_grid = plot_barplot_grid(training_split %>% training()),
-    density_plot_grid = plot_density_grid(training_split %>% training()),
+    barplot_grid = plot_barplot_grid(g_train),
+    density_plot_grid = plot_density_grid(g_train),
     
-    # XGBoost objects
+    # XGBoost 
     xgb_rec = create_xgb_pre_proc(g_train),
     xgb_mod = define_xgb(trees = 100, 
                          learn_rate = 0.05),
