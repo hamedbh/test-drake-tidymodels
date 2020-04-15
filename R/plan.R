@@ -17,11 +17,21 @@ g_plan <- drake_plan(
     
     # XGBoost 
     xgb_rec = create_xgb_pre_proc(g_train),
-    xgb_mod = define_xgb(trees = 100, 
-                         learn_rate = 0.05),
-    xgb_wfl = create_xgb_wflow(xgb_rec, xgb_mod),
+    xgb_mod = define_xgb(trees = 500, 
+                         learn_rate = 0.01),
+    xgb_wfl = workflows::workflow() %>% 
+        add_recipe(xgb_rec) %>% 
+        add_model(xgb_mod),
     xgb_params = create_xgb_params(xgb_wfl, xgb_rec),
     xgb_grid = create_xgb_grid(xgb_params, 10, 1645), 
+    xgb_reg_grid = grid_regular(xgb_params, 
+                                levels = c(4L, 4L, 4L, 3L)), 
+    xgb_reg_grid_tune = tune_xgb_grid(
+        wflow = xgb_wfl,
+        resamples = g_folds,
+        grid = xgb_reg_grid,
+        params = xgb_params
+    ),
     xgb_grid_tune = tune_xgb_grid(
         wflow = xgb_wfl,
         resamples = g_folds,
@@ -33,7 +43,15 @@ g_plan <- drake_plan(
         resamples = g_folds,
         iter = 20L,
         params = xgb_params,
-        grid_results = xgb_grid_tune), 
+        grid_results = xgb_grid_tune, 
+        RNG_seed = 1699), 
+    xgb_reg_bayes_tune = tune_xgb_bayes(
+        wflow = xgb_wfl,
+        resamples = g_folds,
+        iter = 20L,
+        params = xgb_params,
+        grid_results = xgb_reg_grid_tune, 
+        RNG_seed = 1600), 
     
     # Random Forest with ranger 
     

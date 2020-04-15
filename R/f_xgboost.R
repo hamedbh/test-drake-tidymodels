@@ -2,7 +2,6 @@ create_xgb_pre_proc <- function(train) {
     set.seed(1616)
     recipe(outcome ~ .,
            data = train) %>%
-        step_normalize(all_numeric()) %>% 
         step_dummy(all_nominal(),
                    -all_outcomes(),
                    one_hot = TRUE)
@@ -17,7 +16,6 @@ define_xgb <- function(trees, learn_rate) {
         min_n = tune(), 
         tree_depth = tune(), 
         learn_rate = !!eta, 
-        loss_reduction = tune(), 
         sample_size = tune()
     ) %>% 
         set_mode("classification") %>% 
@@ -32,15 +30,18 @@ create_xgb_wflow <- function(pre_proc, model_spec) {
 
 create_xgb_params <- function(wflow,
                               pre_proc) {
+    feat_count <- ncol(pre_proc %>%
+                           prep() %>%
+                           juice() %>%
+                           select(-outcome))
+    
+    mtry_min <- floor(feat_count * 0.4)
+    
     wflow %>%
         parameters() %>%
-        update(mtry = mtry(range = c(1L,
-                                     ncol(pre_proc %>%
-                                              prep() %>%
-                                              juice() %>%
-                                              select(-outcome)
-                                     ))), 
-               sample_size = sample_prop(c(0.4, 1))
+        update(mtry = mtry(range = c(mtry_min, feat_count)), 
+               sample_size = sample_prop(c(0.5, 1)), 
+               tree_depth = tree_depth(range = c(4L, 10L))
         )
 }
 
@@ -74,7 +75,11 @@ tune_xgb_bayes <- function(wflow,
                            resamples,
                            iter, 
                            params,
-                           grid_results) {
+                           grid_results, 
+                           RNG_seed) {
+    no_improve <- iter
+    set.seed(RNG_seed)
+    
     tune_bayes(
         wflow,
         resamples = resamples,
@@ -84,7 +89,8 @@ tune_xgb_bayes <- function(wflow,
         initial = grid_results,
         control = control_bayes(
             verbose = TRUE,
-            save_pred = TRUE
+            save_pred = TRUE, 
+            no_improve = no_improve
         )
     )
 }
