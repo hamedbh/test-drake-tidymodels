@@ -147,18 +147,5 @@ create_cv_folds <- function(dtrain, RNG_seed) {
     set.seed(RNG_seed)
     vfold_cv(dtrain,
              v = 5,
-             repeats = 1,
              strata = outcome)
 }
-
-create_g_pre_proc <- function(dtrain) {
-    set.seed(1118)
-    recipe(outcome ~ .,
-           data = dtrain) %>%
-        step_dummy(all_nominal(),
-                   -all_outcomes(),
-                   one_hot = TRUE) %>%
-        step_normalize(all_numeric()) %>%
-        step_downsample(outcome)
-}
-
