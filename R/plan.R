@@ -33,13 +33,27 @@ g_plan <- drake_plan(
         resamples = g_folds,
         iter = 20L,
         params = xgb_params,
-        grid_results = xgb_grid_tune)
+        grid_results = xgb_grid_tune), 
     
+    # Random Forest with ranger 
     
-    # ranger_spec = define_ranger(500, 725),
-    # ranger_grid = create_ranger_grid(g_train, 5, 737),
-    # ranger_CV = run_ranger_CV(ranger_spec, ranger_grid, cv_folds),
-    # ranger_CV_metrics = get_CV_metrics(ranger_CV), 
-    
-    
+    # Can re-use the XGBoost pre-proc object, jump straight to model
+    ranger_mod = define_ranger(725),
+    ranger_wfl = workflows::workflow() %>% 
+        add_recipe(xgb_rec) %>% 
+        add_model(ranger_mod), 
+    ranger_params = create_ranger_params(ranger_wfl, xgb_rec), 
+    ranger_grid = grid_regular(ranger_params, levels = 3L),
+    ranger_grid_tune = tune_ranger_grid(
+        wflow = ranger_wfl,
+        resamples = g_folds, 
+        grid = ranger_grid, 
+        params = ranger_params), 
+    ranger_bayes_tune = tune_ranger_bayes(
+        wflow = ranger_wfl,
+        resamples = g_folds,
+        iter = 20L, 
+        params = ranger_params,
+        grid_results = ranger_grid_tune, 
+        RNG_seed = 1109), 
 )
