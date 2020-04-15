@@ -117,6 +117,7 @@ get_clean_data <- function(data_path) {
             outcome = fct_recode(outcome,
                                  good = "1",
                                  bad = "2") %>% 
+                # set "bad" as the first level, therefore the target
                 fct_relevel("bad")
         ) %>%
         # add another factor for gender, a simplification of sex_status, which can

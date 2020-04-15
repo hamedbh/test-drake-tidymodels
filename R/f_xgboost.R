@@ -42,10 +42,6 @@ create_xgb_params <- function(wflow,
                                      ))), 
                sample_size = sample_prop(c(0.4, 1))
         )
-    # finalize(pre_proc %>% 
-    #              prep() %>%
-    #              juice() %>%
-    #              select(-outcome))
 }
 
 create_xgb_grid <- function(params,
