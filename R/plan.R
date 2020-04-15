@@ -56,4 +56,29 @@ g_plan <- drake_plan(
         params = ranger_params,
         grid_results = ranger_grid_tune, 
         RNG_seed = 1109), 
+    
+    # Support Vector Machine with Radial Basis Function
+    svmrbf_rec = create_svmrbf_pre_proc(g_train), 
+    svmrbf_mod = define_svmrbf(), 
+    svmrbf_wfl = workflows::workflow() %>% 
+        add_model(svmrbf_mod) %>% 
+        add_recipe(svmrbf_rec), 
+    # Can extract the parameters directly from workflow, no custom function 
+    # required
+    svmrbf_params = parameters(svmrbf_wfl), 
+    svmrbf_grid = grid_max_entropy(svmrbf_params, 
+                                   size = 10L),
+    # reuse the ranger grid functions, all the same
+    svmrbf_grid_tune = tune_ranger_grid(
+        wflow = svmrbf_wfl,
+        resamples = g_folds,
+        grid = svmrbf_grid,
+        params = svmrbf_params),
+    svmrbf_bayes_tune = tune_ranger_bayes(
+        wflow = svmrbf_wfl,
+        resamples = g_folds,
+        iter = 20L,
+        params = svmrbf_params,
+        grid_results = svmrbf_grid_tune,
+        RNG_seed = 1155),
 )
