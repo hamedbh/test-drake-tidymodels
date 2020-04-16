@@ -1,0 +1,16 @@
+---
+title: "Testing `{drake}` and `{tidymodels}`"
+author: "Hamed Bastan-Hagh"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This is an example of predictive modelling using: 
+
+- The [`{drake}`](https://docs.ropensci.org/drake/) package for dependency management; 
+- The [`{tidymodels}`](https://github.com/tidymodels/tidymodels) family of packages for modelling. 
+
+This uses the [German Credit dataset](http://archive.ics.uci.edu/ml/datasets/statlog+(german+credit+data)), predicting a binary outcome of default (`bad`), or paying off the credit in full (`good`). 
+
