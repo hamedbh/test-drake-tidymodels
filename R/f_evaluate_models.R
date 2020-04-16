@@ -1,10 +1,28 @@
-# get_preds <- function(model_grid, test_data) {
-#     model_grid %>% 
-#         mutate(preds = map(fit, 
-#                            ~ predict(.x, 
-#                                      new_data = test_data, 
-#                                      type = "prob")))
-# }
+get_preds <- function(...) {
+    map_dfr(
+        list(...), 
+        collect_predictions, 
+        .id = "model"
+    )
+    # model_grid %>%
+    #     mutate(preds = map(fit,
+    #                        ~ predict(.x,
+    #                                  new_data = test_data,
+    #                                  type = "prob")))
+}
+
+get_metrics <- function(...) {
+    map_dfr(
+        list(...), 
+        collect_metrics, 
+        .id = "model"
+    )
+    # model_grid %>%
+    #     mutate(preds = map(fit,
+    #                        ~ predict(.x,
+    #                                  new_data = test_data,
+    #                                  type = "prob")))
+}
 # 
 # 
 # add_auc <- function(preds_tbl, test_data) {
