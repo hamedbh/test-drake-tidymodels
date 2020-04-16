@@ -1,9 +1,0 @@
- html_document: 
-    highlight: textmate
-    number_sections: yes
-    theme: simplex
-    toc: yes
-    toc_depth: 3
-    toc_float: 
-        collapsed: true
-        
