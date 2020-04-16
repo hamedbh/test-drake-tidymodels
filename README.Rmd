@@ -38,6 +38,8 @@ Some example EDA steps are here. We might start with [skimr](https://github.com/
 skim(readd(g_train))
 ```
 
+--------------------------------------------------------------------------------
+
 So there is no issue with missing values. 
 
 We can visualise the distributions for the variables, starting with the categorical. Note that the plot objects were created in the drake plan, and are included here using `readd()`.
