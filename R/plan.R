@@ -1,8 +1,11 @@
 g_plan <- drake_plan(
-    source_data = download.file(
+    source_data = {
+        fs::dir_create("data/raw")
+        download.file(
         "https://archive.ics.uci.edu/ml/machine-learning-databases/statlog/german/german.data", 
         file_out(here::here("data/raw/german.data"))
-    ), 
+    )
+        }, 
     clean_df = get_clean_data(file_in(here::here("data/raw/german.data"))),
     training_split = partition_data(d = clean_df,
                                     p = 0.8,
