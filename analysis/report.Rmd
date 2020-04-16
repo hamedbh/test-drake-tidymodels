@@ -7,10 +7,234 @@ author: "Hamed Bastan-Hagh"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r include=FALSE}
+library(drake)
+library(tidyverse)
+library(tidymodels)
+library(tune)
+library(workflows)
+library(skimr)
+library(vip)
+default_theme <- theme_get()
+theme_set(theme_light())
+```
+
 This is an example of predictive modelling using: 
 
 - The [`{drake}`](https://docs.ropensci.org/drake/) package for dependency management; 
 - The [`{tidymodels}`](https://github.com/tidymodels/tidymodels) family of packages for modelling. 
 
 This uses the [German Credit dataset](http://archive.ics.uci.edu/ml/datasets/statlog+(german+credit+data)), predicting a binary outcome of default (`bad`), or paying off the credit in full (`good`). 
+
+# Exploratory Data Analysis
+
+Some example EDA steps are here. We might start with [skimr](https://github.com/ropensci/skimr) to get some summary stats on the training data. 
+
+```{r}
+# Read in the training data from the drake cache with readd()
+skim(readd(g_train))
+```
+So there is no issue with missing values. 
+
+We can visualise the distributions for the variables, starting with the categorical. Note that the plot objects were created in the drake plan, and are included here using `readd()`.
+
+```{r}
+readd(barplot_grid)
+```
+
+```{r}
+readd(density_plot_grid)
+```
+
+```{r}
+readd(integer_plot_grid)
+```
+
+The distribution for `amount` is quite skewed, perhaps a log scale will be more informative. 
+
+```{r}
+readd(log_plot_amount)
+```
+
+# Modelling
+
+We will use five model types: 
+
+1. Decision trees (using `{rpart}`); 
+2. Random forest (`{ranger}`); 
+3. Gradient-boosted decision trees (`{xgboost}`); 
+4. Support vector machines with radial basis function (`{kernlab}`); 
+5. Elastic-net regularised logistic regression (`{glmnet}`). 
+
+The approach for each is largely the same: 
+
+1. Define a data pre-processing specification using [`{recipes}`](https://tidymodels.github.io/recipes/); 
+2. Define the model specification using the unified model interface from [`{parsnip}`](https://tidymodels.github.io/parsnip/); 
+3. Combine the model and pre-processing objects into a [`workflow()`](https://tidymodels.github.io/workflows/); 
+4. Extract the parameters from the workflow object and create a tuning grid (either regular or a space-filling type); 
+5. Tune the hyperparameters with [`{tune}`](https://tidymodels.github.io/tune/), using the tuning grid from 4; 
+6. Use the results from the grid tuning as the initial results for Bayesian Optimisation. NB. skipped this step for elastic net as the submodel trick means we can test all combinations of 41 values for each of `penalty` (i.e. `lambda`) and `mixture` (`alpha`) for the cost of training only the 41 values of `mixture`. That gives $41^2 = 1681$ hyperparameter combinations, which is ample. 
+
+We can examine the object created by tuning. 
+
+```{r}
+readd(xgb_reg_bayes_tune)
+```
+
+We will see how to use this in more detail in the [Model evaluation](#model-evaluation) section. It has certain useful methods available, including `autoplot()`. For brevity I have shown this for just XGBoost. 
+
+```{r}
+readd(xgb_reg_bayes_tune) %>% 
+    autoplot(type = "performance") + 
+    # the autoplot() object is a ggplot, so we can modify it as needed
+    labs(
+        title = "Area under the ROC curve during Bayesian Optimisation"
+    )
+```
+
+```{r}
+readd(xgb_reg_bayes_tune) %>% 
+    autoplot(type = "parameters") + # this is the default type
+    labs(
+        title = "Parameter values used during Bayesian Optimisation"
+    )
+```
+
+```{r}
+readd(xgb_reg_bayes_tune) %>% 
+    autoplot(type = "marginals") + 
+    labs(
+        title = "Model performance by parameter value in Bayesian Optimisation"
+    )
+```
+
+# Model evaluation
+
+The [`{yardstick}`](https://tidymodels.github.io/yardstick/) package allows us to extract metrics in a tidy format. 
+```{r}
+readd(xgb_reg_bayes_tune) %>% 
+    collect_metrics()
+```
+
+That output is just a data frame, which we can manipulate as needed. 
+
+```{r}
+# Get the best-performing iterations
+readd(xgb_reg_bayes_tune) %>% 
+    collect_metrics() %>% 
+    top_n(5, mean) %>% 
+    arrange(desc(mean))
+```
+
+That particular example can also be done with `show_best()`. 
+
+```{r}
+readd(xgb_reg_bayes_tune) %>% 
+    show_best(metric = "roc_auc", 
+              n = 5)
+```
+
+We can consider the results across all the model types. 
+
+```{r}
+# The tune_results object is a list containing tuning results for all five 
+# model types
+loadd(tune_results)
+```
+
+
+```{r}
+map_dfr(tune_results, show_best, metric = "roc_auc", .id = "model") %>% 
+    select(model, mean_auc = mean, .iter) %>% 
+    arrange(desc(mean_auc)) %>% 
+    # Elastic net didn't go through Bayesian Optimisation, so it doesn't have 
+    # the .iter variable. Set to 0, i.e. the initial values from grid tuning
+    replace_na(list(.iter = 0L))
+```
+
+XGBoost performs best, followed by Random Forest. The best values mostly came from grid tuning (i.e. `.iter == 0`), suggesting that more iterations of Bayesian Optimisation would have been needed to improve on these. 
+
+The results are easy to visualise also.
+
+```{r}
+map_dfr(tune_results, show_best, n = 10, metric = "roc_auc", .id = "model") %>% 
+    replace_na(list(.iter = 0L)) %>% 
+    mutate(model = factor(model)) %>% 
+    ggplot(aes(x = model, y = mean, colour = model)) + 
+    geom_point(alpha = 0.4) + 
+    scale_colour_viridis_d(option = "B", 
+                           end = 0.7) + 
+    theme(legend.position = "none") + 
+    labs(
+        title = "Top 10 mean values of area under the ROC curve by model type", 
+        y = NULL, 
+        x = NULL
+    )
+```
+We can select the hyperparameters giving the best results with `select_best()`. 
+
+```{r}
+(best_xgb <- tune_results[["XGBoost"]] %>% 
+     select_best(metric = "roc_auc"))
+```
+
+Use `finalize_workflow()` to generate a workflow object with those parameters. 
+
+```{r}
+(best_xgb_wfl <- finalize_workflow(
+    # read in the XGBoost workflow
+    readd(xgb_wfl), 
+    parameters = best_xgb
+))
+```
+And then generate a fitted model from that workflow. 
+
+```{r}
+best_xgb_wfl %>% 
+    fit(
+        # read in the training data
+        data = readd(g_train)
+    )
+```
+This has been completed for all five models in the drake plan. 
+
+```{r}
+loadd(final_fits)
+```
+
+The [`{vip}`](https://koalaverse.github.io/vip/index.html) package helps with variable importance plots. 
+
+```{r}
+final_fits[["XGBoost"]] %>% 
+    pull_workflow_fit() %>% 
+    vip(geom = "point", 
+        num_features = 12L) + 
+    labs(
+        title = "12 most important variables for XGBoost model"
+    )
+```
+
+# Test set performance
+
+XGBoost has performed best overall, so we can evaluate its performance on the test set.
+
+```{r}
+xgb_test_preds <- final_fits[["XGBoost"]] %>% 
+    predict(new_data = readd(g_test), 
+            type = "prob") %>% 
+    bind_cols(readd(g_test) %>% 
+                  select(outcome))
+xgb_test_preds
+
+# Generate the full ROC curve
+xgb_roc_curve <- roc_curve(xgb_test_preds, truth = outcome, .pred_bad)
+
+# Get the AUC value and plot the curve
+autoplot(xgb_roc_curve) + 
+    labs(
+        title = sprintf("AUC for XGBoost model on test set: %.2f", 
+                        roc_auc(xgb_test_preds, truth = outcome, .pred_bad) %>% 
+                            pull(.estimate))
+    )
+```
 
