@@ -170,7 +170,8 @@ g_plan <- drake_plan(
     
     report = rmarkdown::render(
         knitr_in(!!here::here("analysis/report.Rmd")), 
-        output_file = file_out(!!here::here("analysis/report.html")), 
+        output_format = "github_document", 
+        output_file = file_out(!!here::here("analysis/report.md")), 
         quiet = TRUE
     )
 )

@@ -6,3 +6,4 @@
 data/tidy/*
 R/scratch.R
 data/raw/german.data
+**.html

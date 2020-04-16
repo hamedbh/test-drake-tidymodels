@@ -1,13 +1,14 @@
 ---
 title: "Testing `{drake}` and `{tidymodels}`"
 author: "Hamed Bastan-Hagh"
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r include=FALSE}
+```{r load pkgs, include=FALSE}
 library(drake)
 library(tidyverse)
 library(tidymodels)
@@ -30,7 +31,7 @@ This uses the [German Credit dataset](http://archive.ics.uci.edu/ml/datasets/sta
 
 Some example EDA steps are here. We might start with [skimr](https://github.com/ropensci/skimr) to get some summary stats on the training data. 
 
-```{r}
+```{r skim data}
 # Read in the training data from the drake cache with readd()
 skim(readd(g_train))
 ```
@@ -38,21 +39,21 @@ So there is no issue with missing values.
 
 We can visualise the distributions for the variables, starting with the categorical. Note that the plot objects were created in the drake plan, and are included here using `readd()`.
 
-```{r}
+```{r factor barplots}
 readd(barplot_grid)
 ```
 
-```{r}
+```{r density plot grid}
 readd(density_plot_grid)
 ```
 
-```{r}
+```{r integer plot grid}
 readd(integer_plot_grid)
 ```
 
 The distribution for `amount` is quite skewed, perhaps a log scale will be more informative. 
 
-```{r}
+```{r log plot amount}
 readd(log_plot_amount)
 ```
 
@@ -77,13 +78,13 @@ The approach for each is largely the same:
 
 We can examine the object created by tuning. 
 
-```{r}
+```{r XGBoost tuning object}
 readd(xgb_reg_bayes_tune)
 ```
 
 We will see how to use this in more detail in the [Model evaluation](#model-evaluation) section. It has certain useful methods available, including `autoplot()`. For brevity I have shown this for just XGBoost. 
 
-```{r}
+```{r bayesopt by iteration}
 readd(xgb_reg_bayes_tune) %>% 
     autoplot(type = "performance") + 
     # the autoplot() object is a ggplot, so we can modify it as needed
@@ -92,7 +93,7 @@ readd(xgb_reg_bayes_tune) %>%
     )
 ```
 
-```{r}
+```{r bayesopt by parameter}
 readd(xgb_reg_bayes_tune) %>% 
     autoplot(type = "parameters") + # this is the default type
     labs(
@@ -100,7 +101,7 @@ readd(xgb_reg_bayes_tune) %>%
     )
 ```
 
-```{r}
+```{r bayesopt marginals}
 readd(xgb_reg_bayes_tune) %>% 
     autoplot(type = "marginals") + 
     labs(
@@ -111,14 +112,14 @@ readd(xgb_reg_bayes_tune) %>%
 # Model evaluation
 
 The [`{yardstick}`](https://tidymodels.github.io/yardstick/) package allows us to extract metrics in a tidy format. 
-```{r}
+```{r xgboost metrics}
 readd(xgb_reg_bayes_tune) %>% 
     collect_metrics()
 ```
 
 That output is just a data frame, which we can manipulate as needed. 
 
-```{r}
+```{r best xgb}
 # Get the best-performing iterations
 readd(xgb_reg_bayes_tune) %>% 
     collect_metrics() %>% 
@@ -128,7 +129,7 @@ readd(xgb_reg_bayes_tune) %>%
 
 That particular example can also be done with `show_best()`. 
 
-```{r}
+```{r easier best xgb}
 readd(xgb_reg_bayes_tune) %>% 
     show_best(metric = "roc_auc", 
               n = 5)
@@ -136,14 +137,14 @@ readd(xgb_reg_bayes_tune) %>%
 
 We can consider the results across all the model types. 
 
-```{r}
+```{r all tuning results}
 # The tune_results object is a list containing tuning results for all five 
 # model types
 loadd(tune_results)
 ```
 
 
-```{r}
+```{r best tuning results}
 map_dfr(tune_results, show_best, metric = "roc_auc", .id = "model") %>% 
     select(model, mean_auc = mean, .iter) %>% 
     arrange(desc(mean_auc)) %>% 
@@ -156,7 +157,7 @@ XGBoost performs best, followed by Random Forest. The best values mostly came fr
 
 The results are easy to visualise also.
 
-```{r}
+```{r plot tuning results}
 map_dfr(tune_results, show_best, n = 10, metric = "roc_auc", .id = "model") %>% 
     replace_na(list(.iter = 0L)) %>% 
     mutate(model = factor(model)) %>% 
@@ -173,14 +174,14 @@ map_dfr(tune_results, show_best, n = 10, metric = "roc_auc", .id = "model") %>%
 ```
 We can select the hyperparameters giving the best results with `select_best()`. 
 
-```{r}
+```{r best xgb hyperparams}
 (best_xgb <- tune_results[["XGBoost"]] %>% 
      select_best(metric = "roc_auc"))
 ```
 
 Use `finalize_workflow()` to generate a workflow object with those parameters. 
 
-```{r}
+```{r finalising a workflow}
 (best_xgb_wfl <- finalize_workflow(
     # read in the XGBoost workflow
     readd(xgb_wfl), 
@@ -189,7 +190,7 @@ Use `finalize_workflow()` to generate a workflow object with those parameters.
 ```
 And then generate a fitted model from that workflow. 
 
-```{r}
+```{r final fit for XGBoost}
 best_xgb_wfl %>% 
     fit(
         # read in the training data
@@ -198,13 +199,13 @@ best_xgb_wfl %>%
 ```
 This has been completed for all five models in the drake plan. 
 
-```{r}
+```{r all final fits}
 loadd(final_fits)
 ```
 
 The [`{vip}`](https://koalaverse.github.io/vip/index.html) package helps with variable importance plots. 
 
-```{r}
+```{r var imp plot XGBoost}
 final_fits[["XGBoost"]] %>% 
     pull_workflow_fit() %>% 
     vip(geom = "point", 
@@ -218,7 +219,7 @@ final_fits[["XGBoost"]] %>%
 
 XGBoost has performed best overall, so we can evaluate its performance on the test set.
 
-```{r}
+```{r test AUC XGBoost}
 xgb_test_preds <- final_fits[["XGBoost"]] %>% 
     predict(new_data = readd(g_test), 
             type = "prob") %>% 
