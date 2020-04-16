@@ -143,6 +143,30 @@ g_plan <- drake_plan(
         grid = elnet_grid,
         params = elnet_params), 
     
+    # List of all the tuning results, for convenience. Could due this more 
+    # compactly by using the map() and/or cross() transforms available in drake
+    tune_results = list(
+        CART = tree_bayes_tune, 
+        "Random Forest" = ranger_bayes_tune, 
+        XGBoost = xgb_reg_bayes_tune, 
+        SVM = svmrbf_bayes_tune, 
+        "Elastic Net" = elnet_grid_tune
+    ), 
+    # same for the workflows
+    all_wfl = list(
+        CART = tree_wfl, 
+        "Random Forest" = ranger_wfl, 
+        XGBoost = xgb_wfl, 
+        SVM = svmrbf_wfl, 
+        "Elastic Net" = elnet_wfl
+    ), 
+    final_fits = map2(
+        all_wfl, 
+        purrr::map(tune_results, 
+                   select_best, 
+                   "roc_auc"), 
+        ~ finalize_workflow(.x, .y) %>% 
+            fit(data = g_train)), 
     
     report = rmarkdown::render(
         knitr_in(!!here::here("analysis/report.Rmd")), 
