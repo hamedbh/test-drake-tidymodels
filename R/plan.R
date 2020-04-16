@@ -13,7 +13,34 @@ g_plan <- drake_plan(
     
     # Plot objects
     barplot_grid = plot_barplot_grid(g_train),
-    density_plot_grid = plot_density_grid(g_train),
+    density_plot_grid = plot_density_grid(g_train), 
+    integer_plot_grid = plot_integer_grid(g_train), 
+    log_plot_amount = plot_log_amount(g_train), 
+    
+    # Decision trees with rpart
+    tree_rec = create_tree_pre_proc(g_train), 
+    tree_mod = define_tree_mod(), 
+    tree_wfl = workflows::workflow() %>% 
+        add_recipe(tree_rec) %>% 
+        add_model(tree_mod),
+    tree_params = parameters(tree_wfl), 
+    tree_grid = create_tree_grid(tree_params, 
+                                 size = 10L, 
+                                 RNG_seed = 944), 
+    tree_grid_tune = tune_tree_grid(
+        wflow = tree_wfl,
+        resamples = g_folds, 
+        grid = tree_grid, 
+        params = tree_params
+    ), 
+    tree_bayes_tune = tune_tree_bayes(
+        wflow = tree_wfl,
+        resamples = g_folds,
+        iter = 20L, 
+        params = tree_params,
+        grid_results = tree_grid_tune, 
+        RNG_seed = 946
+    ), 
     
     # XGBoost 
     xgb_rec = create_xgb_pre_proc(g_train),
@@ -109,12 +136,13 @@ g_plan <- drake_plan(
     elnet_params = parameters(elnet_wfl) %>% 
         update(mixture = mixture(range = c(0, 1))), 
     elnet_grid = grid_regular(elnet_params, 
-                              levels = 21), 
+                              levels = 41), 
     elnet_grid_tune = tune_ranger_grid(
         wflow = elnet_wfl,
         resamples = g_folds,
         grid = elnet_grid,
         params = elnet_params), 
+    
     
     report = rmarkdown::render(
         knitr_in(!!here::here("analysis/report.Rmd")), 
