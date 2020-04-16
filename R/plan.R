@@ -114,5 +114,11 @@ g_plan <- drake_plan(
         wflow = elnet_wfl,
         resamples = g_folds,
         grid = elnet_grid,
-        params = elnet_params)
+        params = elnet_params), 
+    
+    report = rmarkdown::render(
+        knitr_in(!!here::here("analysis/report.Rmd")), 
+        output_file = file_out(!!here::here("analysis/report.html")), 
+        quiet = TRUE
+    )
 )
