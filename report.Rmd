@@ -5,7 +5,12 @@ output: github_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+    collapse = TRUE, 
+    comment = "#>",
+    fig.path = "man/figures/", 
+    echo = TRUE
+)
 ```
 
 ```{r load pkgs, include=FALSE}
@@ -16,7 +21,6 @@ library(tune)
 library(workflows)
 library(skimr)
 library(vip)
-default_theme <- theme_get()
 theme_set(theme_light())
 ```
 

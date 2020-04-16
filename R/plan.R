@@ -169,9 +169,9 @@ g_plan <- drake_plan(
             fit(data = g_train)), 
     
     report = rmarkdown::render(
-        knitr_in(!!here::here("analysis/report.Rmd")), 
+        knitr_in("report.Rmd"), 
         output_format = "github_document", 
-        output_file = file_out(!!here::here("analysis/report.md")), 
+        output_file = file_out("report.md"), 
         quiet = TRUE
     )
 )
