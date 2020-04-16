@@ -168,10 +168,10 @@ g_plan <- drake_plan(
         ~ finalize_workflow(.x, .y) %>% 
             fit(data = g_train)), 
     
-    report = rmarkdown::render(
-        knitr_in("report.Rmd"), 
+    README = rmarkdown::render(
+        knitr_in("README.Rmd"), 
         output_format = "github_document", 
-        output_file = file_out("report.md"), 
+        output_file = file_out("README.md"), 
         quiet = TRUE
     )
 )
