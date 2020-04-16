@@ -6,7 +6,9 @@ define_ranger <- function(RNG_seed) {
         mtry = tune(), 
         min_n = tune()
     ) %>%
-        set_engine("ranger", seed = RNG_seed)
+        set_engine("ranger", 
+                   importance = "impurity", 
+                   seed = RNG_seed)
 }
 
 create_ranger_params <- function(wflow,
