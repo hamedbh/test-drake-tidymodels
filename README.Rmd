@@ -1,13 +1,11 @@
 ---
 title: "Testing `{drake}` and `{tidymodels}`"
-author: "Hamed Bastan-Hagh"
 output: github_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
     collapse = TRUE, 
-    comment = "#>",
     fig.path = "man/figures/", 
     echo = TRUE
 )
@@ -39,6 +37,7 @@ Some example EDA steps are here. We might start with [skimr](https://github.com/
 # Read in the training data from the drake cache with readd()
 skim(readd(g_train))
 ```
+
 So there is no issue with missing values. 
 
 We can visualise the distributions for the variables, starting with the categorical. Note that the plot objects were created in the drake plan, and are included here using `readd()`.

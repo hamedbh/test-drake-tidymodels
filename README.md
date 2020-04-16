@@ -1,6 +1,5 @@
 Testing `{drake}` and `{tidymodels}`
 ================
-Hamed Bastan-Hagh
 
 This is an example of predictive modelling using:
 
